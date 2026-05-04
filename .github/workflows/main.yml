@@ -11,10 +11,8 @@ jobs:
       - name: Download OpenCV 4.13.0 Source
         shell: pwsh
         run: |
-          # 从官方源下载 OpenCV 4.13.0
           Write-Host "正在下载 OpenCV 4.13.0..."
-          $url = "https://github.com/opencv/opencv/archive/refs/tags/4.13.0.zip"
-          Invoke-WebRequest -Uri $url `
+          Invoke-WebRequest -Uri "https://sourceforge.net/projects/opencvlibrary/files/4.13.0/opencv-4.13.0.zip" `
             -OutFile "opencv.zip" `
             -UseBasicParsing
           
@@ -25,7 +23,6 @@ jobs:
           Rename-Item -Path "opencv-4.13.0" -NewName "opencv_src" -Force
           
           Write-Host "下载完成！"
-          dir opencv_src
 
       - name: Install Dependencies
         run: |
@@ -42,16 +39,39 @@ jobs:
             -DBUILD_TESTS=OFF `
             -DBUILD_PERF_TESTS=OFF `
             -DBUILD_JAVA=OFF `
-            -DINSTALL_CREATE_DISTRIB=ON `
             -DCMAKE_INSTALL_PREFIX=install
 
-      - name: Build Debug & Release
+      - name: Build Release
         run: |
-          cmake --build build_x86 --config Debug --target INSTALL -j 4
-          cmake --build build_x86 --config Release --target INSTALL -j 4
+          cmake --build build_x86 --config Release -j 4
+
+      - name: Install Release
+        run: |
+          cmake --install build_x86 --config Release
+
+      - name: Verify install directory
+        shell: pwsh
+        run: |
+          Write-Host "检查当前目录..."
+          Get-ChildItem -Path "." -Name | head -20
+          
+          Write-Host ""
+          Write-Host "检查 install 目录..."
+          if (Test-Path "install") {
+            Write-Host "✓ install 目录存在"
+            Write-Host ""
+            Get-ChildItem -Path "install" -Recurse -Name | head -50
+            Write-Host ""
+            Write-Host "总文件数："
+            (Get-ChildItem -Path "install" -Recurse | Measure-Object).Count
+          } else {
+            Write-Host "✗ install 目录不存在！"
+          }
 
       - name: Upload Finished Libs
         uses: actions/upload-artifact@v4
         with:
           name: OpenCV-4.13.0-VS2022-x86
-          path: build_x86/install/
+          path: install/
+          if-no-files-found: error
+          retention-days: 90
