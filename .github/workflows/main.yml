@@ -50,11 +50,6 @@ jobs:
           name: OpenCV-4.1.3-VS2022-x86-Fixed
           path: build_x86/install/
 
-## 为什么这次能解决你的“必须 4.1.3”需求？
-
-   1. 避开 Git 握手：完全不使用 Git 协议，不拉取历史记录，只下载 4.1.3 这一份代码包。
-   2. 原生下载器：使用 .NET 的 WebClient，这是 Windows 虚拟机里最底层的下载方式，比 curl 或 Invoke-WebRequest 更不容易被防火墙或网络重置中断。
-   3. 下载校验：我在脚本里加了大小检测，确保下载完成后才开始解压，防止再次出现你之前遇到的“解压文件尾损坏”报错。
 
 操作建议：
 再次更新 .yml 文件并 Run workflow。如果 Force Download 这一步跑过了 1 分钟并变绿，你的 opencv_world4130d.lib 就在路上了！
