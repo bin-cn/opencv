@@ -9,17 +9,31 @@ jobs:
 
     steps:
       - name: Download OpenCV 4.1.3 Source
+        shell: pwsh
         run: |
-          # 下载 OpenCV 4.1.3 源码 - 使用直接的 release 下载链接
-          curl -L -o opencv.zip https://github.com/opencv/opencv/archive/refs/tags/4.1.3.zip
-          Expand-Archive -Path opencv.zip -DestinationPath .
-          dir
-          # 重命名为统一的名称
-          Rename-Item -Path "opencv-4.1.3" -NewName "opencv_src"
+          # 使用 Invoke-WebRequest 替代 curl，避免别名冲突
+          Write-Host "正在下载 OpenCV 4.1.3..."
+          Invoke-WebRequest -Uri "https://github.com/opencv/opencv/archive/refs/tags/4.1.3.zip" `
+            -OutFile "opencv.zip" `
+            -UseBasicParsing
+          
+          Write-Host "正在解压..."
+          Expand-Archive -Path opencv.zip -DestinationPath . -Force
+          
+          Write-Host "正在重命名文件夹..."
+          if (Test-Path "opencv-4.1.3") {
+            Rename-Item -Path "opencv-4.1.3" -NewName "opencv_src" -Force
+          } else {
+            Write-Host "错误：找不到 opencv-4.1.3 文件夹"
+            dir
+            exit 1
+          }
+          
+          Write-Host "下载完成！"
+          dir opencv_src
 
       - name: Install Dependencies
         run: |
-          # 确保 CMake 可用
           choco install cmake -y
           cmake --version
 
