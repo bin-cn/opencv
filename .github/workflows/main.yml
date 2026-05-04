@@ -1,52 +1,46 @@
+name: Build OpenCV 4.1.3 x86 VS2022 Stable
 
-
-name: Build OpenCV 4.1.3 x86 VS2022 Force 413
 on: 
   workflow_dispatch:
+
 jobs:
   build_x86:
     runs-on: windows-2022
 
     steps:
-      - name: Force Download OpenCV 4.1.3 Source
-        shell: powershell
+      - name: Download OpenCV 4.1.3 Source
         run: |
-          # 使用另一个官方镜像下载地址，避开 GitHub 直接下载的波动
-          $url = "https://github.com"
-          Write-Host "Starting download from $url ..."
-          
-          # 使用系统原生 WebClient，不使用 curl 别名
-          (New-Object System.Net.WebClient).DownloadFile($url, "opencv.zip")
-          
-          if (Test-Path "opencv.zip") {
-              Write-Host "Download successful, size: $((Get-Item opencv.zip).Length / 1MB) MB"
-          } else {
-              Write-Error "Download failed!"
-              exit 1
-          }
+          # 下载正确的 OpenCV 4.1.3 源码
+          curl -L https://github.com/opencv/opencv/archive/4.1.3.zip -o opencv.zip
+          Expand-Archive -Path opencv.zip -DestinationPath .
+          # 重命名为统一的名称
+          Rename-Item -Path "opencv-4.1.3" -NewName "opencv_src"
 
-          # 解压
-          Expand-Archive -Path "opencv.zip" -DestinationPath "." -Force
-          Move-Item -Path "opencv-4.1.3" -Destination "opencv_src"
+      - name: Install Dependencies
+        run: |
+          # 确保 CMake 可用
+          choco install cmake -y
+
       - name: Configure CMake for Win32
         run: |
           cmake -S opencv_src -B build_x86 `
             -G "Visual Studio 17 2022" -A Win32 `
+            -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_opencv_world=ON `
-            -DBUILD_SHARED_LIBS=ON `
             -DBUILD_EXAMPLES=OFF `
             -DBUILD_TESTS=OFF `
             -DBUILD_PERF_TESTS=OFF `
-            -DINSTALL_CREATE_DISTRIB=ON
+            -DBUILD_JAVA=OFF `
+            -DINSTALL_CREATE_DISTRIB=ON `
+            -DCMAKE_INSTALL_PREFIX=install
+
       - name: Build Debug & Release
         run: |
-          # 先编译 Debug
           cmake --build build_x86 --config Debug --target INSTALL -j 4
-          # 再编译 Release
           cmake --build build_x86 --config Release --target INSTALL -j 4
-      - name: Upload Artifacts
+
+      - name: Upload Finished Libs
         uses: actions/upload-artifact@v4
         with:
-          name: OpenCV-4.1.3-VS2022-x86-Fixed
+          name: OpenCV-4.1.3-VS2022-x86
           path: build_x86/install/
-
