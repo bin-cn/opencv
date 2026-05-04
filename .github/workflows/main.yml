@@ -1,4 +1,4 @@
-name: Build OpenCV 4.1.3 x86 VS2022 Stable
+name: Build OpenCV 4.1.3 x86 VS2022 Final
 
 on: 
   workflow_dispatch:
@@ -8,33 +8,32 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - name: Download and Extract OpenCV 4.1.3
-        shell: powershell
-        run: |
-          # 下载
-          Invoke-WebRequest -Uri "https://github.com" -OutFile "opencv.zip"
-          # 解压到当前目录
-          Expand-Archive -Path "opencv.zip" -DestinationPath "." -Force
-          # 确认文件夹存在并改名（避开可能存在的命名冲突）
-          if (Test-Path "opencv-4.1.3") {
-              Move-Item -Path "opencv-4.1.3" -Destination "opencv_src" -Force
-          }
+      - name: Checkout OpenCV 4.1.3
+        uses: actions/checkout@v4
+        with:
+          repository: opencv/opencv
+          ref: 4.1.3
+          path: opencv_src
+          fetch-depth: 1 # 只拉取最新的一层，减小下载量，提高成功率
 
       - name: Configure CMake for Win32
+        # 增加 -DBUILD_SHARED_LIBS=ON 确保生成 DLL 和 LIB
         run: |
           cmake -S opencv_src -B build_x86 `
             -G "Visual Studio 17 2022" -A Win32 `
             -DBUILD_opencv_world=ON `
+            -DBUILD_SHARED_LIBS=ON `
             -DBUILD_EXAMPLES=OFF `
             -DBUILD_TESTS=OFF `
             -DBUILD_PERF_TESTS=OFF `
             -DBUILD_JAVA=OFF `
             -DINSTALL_CREATE_DISTRIB=ON
 
-      - name: Build Debug & Release
-        run: |
-          cmake --build build_x86 --config Debug --target INSTALL -j 4
-          cmake --build build_x86 --config Release --target INSTALL -j 4
+      - name: Build Debug Version
+        run: cmake --build build_x86 --config Debug --target INSTALL -j 4
+
+      - name: Build Release Version
+        run: cmake --build build_x86 --config Release --target INSTALL -j 4
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
