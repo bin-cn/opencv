@@ -1,4 +1,4 @@
-name: Build OpenCV 4.1.3 x86 VS2022 Stable
+name: Build OpenCV 4.13.0 x86 VS2022 Stable
 
 on: 
   workflow_dispatch:
@@ -8,12 +8,13 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - name: Download OpenCV 4.1.3 Source
+      - name: Download OpenCV 4.13.0 Source
         shell: pwsh
         run: |
-          # 使用 Invoke-WebRequest 替代 curl，避免别名冲突
-          Write-Host "正在下载 OpenCV 4.1.3..."
-          Invoke-WebRequest -Uri "https://github.com/opencv/opencv/archive/refs/tags/4.1.3.zip" `
+          # 从官方源下载 OpenCV 4.13.0
+          Write-Host "正在下载 OpenCV 4.13.0..."
+          $url = "https://github.com/opencv/opencv/archive/refs/tags/4.13.0.zip"
+          Invoke-WebRequest -Uri $url `
             -OutFile "opencv.zip" `
             -UseBasicParsing
           
@@ -21,13 +22,7 @@ jobs:
           Expand-Archive -Path opencv.zip -DestinationPath . -Force
           
           Write-Host "正在重命名文件夹..."
-          if (Test-Path "opencv-4.1.3") {
-            Rename-Item -Path "opencv-4.1.3" -NewName "opencv_src" -Force
-          } else {
-            Write-Host "错误：找不到 opencv-4.1.3 文件夹"
-            dir
-            exit 1
-          }
+          Rename-Item -Path "opencv-4.13.0" -NewName "opencv_src" -Force
           
           Write-Host "下载完成！"
           dir opencv_src
@@ -58,5 +53,5 @@ jobs:
       - name: Upload Finished Libs
         uses: actions/upload-artifact@v4
         with:
-          name: OpenCV-4.1.3-VS2022-x86
+          name: OpenCV-4.13.0-VS2022-x86
           path: build_x86/install/
